@@ -252,7 +252,14 @@ size_t aioMultiplePositions( positionContainer *p,
 		}
 	      }
 
-	      io_prep_pwrite(cbs[qdIndex], fd, data[qdIndex], len, newpos);
+          struct iovec* iovec = iovecs[qdIndex];
+          for (size_t pIndex = 0; pIndex < pagecnt; ++pIndex) {
+            // reverse order to not be contiguous
+            iovec[pIndex].iov_base = (data[qdIndex] + maxSize) - (pIndex + 1) * PAGESZ;
+            iovec[pIndex].iov_len = PAGESZ;
+          }
+          io_prep_pwritev(cbs[qdIndex], fd, iovec, pagecnt, newpos);
+	      //io_prep_pwrite(cbs[qdIndex], fd, data[qdIndex], len, newpos);
 	      cbs[qdIndex]->data = &positions[pos];
 
 	      flushPos++;
